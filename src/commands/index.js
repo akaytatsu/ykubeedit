@@ -1,7 +1,9 @@
 const addOtelCommand = require('./add-otel');
+const removeCertManagerProdCommand = require('./remove-cert-manager-prod');
 
 const commands = {
-  'add-otel': addOtelCommand
+  'add-otel': addOtelCommand,
+  'remove-cert-manager-prod': removeCertManagerProdCommand
 };
 
 function getCommand(commandName) {

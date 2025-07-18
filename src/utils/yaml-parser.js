@@ -93,10 +93,20 @@ function getExistingOtelVars(deployment) {
   return container.env.filter(envVar => envVar.name.startsWith('OTEL_'));
 }
 
+function findIngressInDocs(docs, ingressName) {
+  return docs.find(doc => 
+    doc && 
+    doc.kind === 'Ingress' && 
+    doc.metadata && 
+    doc.metadata.name === ingressName
+  );
+}
+
 module.exports = {
   loadYamlFile,
   saveYamlFile,
   findDeploymentInDocs,
+  findIngressInDocs,
   updateDeploymentEnvVars,
   hasOtelConfiguration,
   getExistingOtelVars

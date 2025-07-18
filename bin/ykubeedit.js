@@ -31,9 +31,25 @@ async function main() {
     .description('Adicionar configurações OpenTelemetry em deployments')
     .argument('[directory]', 'diretório para escanear (padrão: diretório atual)', process.cwd())
     .option('--dry-run', 'preview das mudanças sem modificar arquivos')
+    .option('--select-all', 'selecionar todos os deployments automaticamente')
     .action(async (directory, options) => {
       try {
         await cli.addOtelCommand(directory, options);
+      } catch (error) {
+        console.error(chalk.red('\n❌ Erro:'), error.message);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('remove-cert-manager-prod')
+    .description('Remover tags cert-manager.io/cluster-issuer: letsencrypt-prod de ingress')
+    .argument('[directory]', 'diretório para escanear (padrão: diretório atual)', process.cwd())
+    .option('--dry-run', 'preview das mudanças sem modificar arquivos')
+    .option('--select-all', 'selecionar todos os ingress automaticamente')
+    .action(async (directory, options) => {
+      try {
+        await cli.removeCertManagerProdCommand(directory, options);
       } catch (error) {
         console.error(chalk.red('\n❌ Erro:'), error.message);
         process.exit(1);

@@ -5,9 +5,10 @@ CLI tool para edição em massa de YAMLs do Kubernetes com foco em automação e
 ## 📋 Funcionalidades
 
 - ✅ **Adicionar OpenTelemetry**: Adiciona configurações completas de OpenTelemetry em deployments
-- 🔄 **Edição em massa**: Processa múltiplos deployments simultaneamente
-- 🎯 **Seleção interativa**: Interface CLI para escolher quais deployments modificar
-- 🔍 **Detecção automática**: Escaneia recursivamente buscando deployments Kubernetes
+- 🧹 **Remover Cert-Manager Prod**: Remove tags cert-manager.io/cluster-issuer: letsencrypt-prod de ingress
+- 🔄 **Edição em massa**: Processa múltiplos recursos Kubernetes simultaneamente
+- 🎯 **Seleção interativa**: Interface CLI para escolher quais recursos modificar
+- 🔍 **Detecção automática**: Escaneia recursivamente buscando deployments e ingress Kubernetes
 - 💡 **Preview mode**: Visualiza mudanças antes de aplicar (--dry-run)
 - 📋 **Filtros de exclusão**: Suporte ao arquivo `.yamlsignore` para ignorar pastas/arquivos
 
@@ -18,9 +19,11 @@ CLI tool para edição em massa de YAMLs do Kubernetes com foco em automação e
 ```bash
 # Executar diretamente sem instalar
 npx ykubeedit add-otel
+npx ykubeedit remove-cert-manager-prod
 
 # Com opções
 npx ykubeedit add-otel /path/to/kubernetes/yamls --dry-run
+npx ykubeedit remove-cert-manager-prod /path/to/kubernetes/yamls --dry-run
 ```
 
 ### Instalação Global
@@ -28,6 +31,7 @@ npx ykubeedit add-otel /path/to/kubernetes/yamls --dry-run
 ```bash
 npm install -g ykubeedit
 ykubeedit add-otel
+ykubeedit remove-cert-manager-prod
 ```
 
 ## 📖 Comandos Disponíveis
@@ -45,6 +49,9 @@ npx ykubeedit add-otel /home/usuario/projetos/kubehomol
 
 # Preview sem modificar arquivos
 npx ykubeedit add-otel --dry-run
+
+# Selecionar todos automaticamente
+npx ykubeedit add-otel --select-all
 
 # Ajuda específica do comando
 npx ykubeedit add-otel --help
@@ -78,6 +85,56 @@ env:
     value: "true"
   - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
     value: "true"
+```
+
+### `remove-cert-manager-prod` - Remover Cert-Manager Produção
+
+Remove a annotation `cert-manager.io/cluster-issuer: letsencrypt-prod` de recursos Ingress.
+
+```bash
+# Escanear diretório atual
+npx ykubeedit remove-cert-manager-prod
+
+# Especificar diretório
+npx ykubeedit remove-cert-manager-prod /home/usuario/projetos/kubehomol
+
+# Preview sem modificar arquivos
+npx ykubeedit remove-cert-manager-prod --dry-run
+
+# Selecionar todos automaticamente
+npx ykubeedit remove-cert-manager-prod --select-all
+
+# Ajuda específica do comando
+npx ykubeedit remove-cert-manager-prod --help
+```
+
+#### O que o comando faz:
+
+1. **Escaneia** recursivamente o diretório em busca de arquivos YAML
+2. **Identifica** recursos Ingress automaticamente
+3. **Filtra** ingress que possuem a annotation `cert-manager.io/cluster-issuer: letsencrypt-prod`
+4. **Apresenta** lista interativa para seleção múltipla
+5. **Remove** apenas a annotation problemática, preservando outras annotations
+
+**Exemplo de mudança aplicada:**
+
+```yaml
+# ANTES
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # <- REMOVIDA
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    other-annotation: value                           # <- PRESERVADA
+
+# DEPOIS  
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    other-annotation: value
 ```
 
 ### Opções Globais

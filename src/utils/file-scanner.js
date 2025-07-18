@@ -78,6 +78,35 @@ async function findKubernetesDeployments(yamlFiles) {
   return deployments;
 }
 
+async function findKubernetesIngress(yamlFiles) {
+  const ingress = [];
+  
+  for (const filePath of yamlFiles) {
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      const docs = yaml.loadAll(content);
+      
+      for (const doc of docs) {
+        if (doc && 
+            doc.kind === 'Ingress' && 
+            doc.metadata) {
+          
+          ingress.push({
+            filePath,
+            document: doc,
+            namespace: doc.metadata.namespace || 'default',
+            name: doc.metadata.name
+          });
+        }
+      }
+    } catch (error) {
+      console.log(chalk.yellow(`⚠️  Aviso: Erro ao processar ${path.relative(process.cwd(), filePath)}: ${error.message}`));
+    }
+  }
+  
+  return ingress;
+}
+
 async function scanForDeployments(directory) {
   console.log(chalk.blue(`📂 Escaneando arquivos YAML em: ${directory}`));
   
@@ -90,8 +119,22 @@ async function scanForDeployments(directory) {
   return deployments;
 }
 
+async function scanForIngress(directory) {
+  console.log(chalk.blue(`📂 Escaneando arquivos YAML em: ${directory}`));
+  
+  const yamlFiles = await scanYamlFiles(directory);
+  console.log(chalk.gray(`   Encontrados ${yamlFiles.length} arquivos YAML`));
+  
+  const ingress = await findKubernetesIngress(yamlFiles);
+  console.log(chalk.gray(`   Encontrados ${ingress.length} ingress\n`));
+  
+  return ingress;
+}
+
 module.exports = {
   scanYamlFiles,
   findKubernetesDeployments,
-  scanForDeployments
+  findKubernetesIngress,
+  scanForDeployments,
+  scanForIngress
 };
