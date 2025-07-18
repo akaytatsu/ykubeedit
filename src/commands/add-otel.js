@@ -88,16 +88,16 @@ async function execute(directory, options = {}) {
     });
 
     // 5. Filtrar deployments que já estão OK
-    const deploymentsNeedingUpdate = deploymentsWithStatus.filter(deployment => 
+    const deploymentsNeedingUpdate = deploymentsWithStatus.filter(deployment =>
       deployment.status !== '✅ OK'
     );
-    
+
     if (deploymentsNeedingUpdate.length === 0) {
       console.log(chalk.green('🎉 Todos os deployments já possuem configuração OpenTelemetry correta!'));
       console.log(chalk.gray('   Nenhuma ação necessária.\n'));
       return;
     }
-    
+
     if (deploymentsNeedingUpdate.length < deploymentsWithStatus.length) {
       const okCount = deploymentsWithStatus.length - deploymentsNeedingUpdate.length;
       console.log(chalk.green(`✅ ${okCount} deployment(s) já configurado(s) corretamente (ignorados)`));
@@ -109,7 +109,7 @@ async function execute(directory, options = {}) {
       const choices = deploymentsNeedingUpdate.map(deployment => ({
         name: `${deployment.status} ${deployment.displayName} ${deployment.filePathDisplay}`,
         value: deployment,
-        checked: false
+        checked: true
       }));
 
       const { selectedDeployments } = await inquirer.prompt([
