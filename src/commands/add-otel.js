@@ -87,9 +87,26 @@ async function execute(directory, options = {}) {
       };
     });
 
-    // 5. Seleção interativa
+    // 5. Filtrar deployments que já estão OK
+    const deploymentsNeedingUpdate = deploymentsWithStatus.filter(deployment => 
+      deployment.status !== '✅ OK'
+    );
+    
+    if (deploymentsNeedingUpdate.length === 0) {
+      console.log(chalk.green('🎉 Todos os deployments já possuem configuração OpenTelemetry correta!'));
+      console.log(chalk.gray('   Nenhuma ação necessária.\n'));
+      return;
+    }
+    
+    if (deploymentsNeedingUpdate.length < deploymentsWithStatus.length) {
+      const okCount = deploymentsWithStatus.length - deploymentsNeedingUpdate.length;
+      console.log(chalk.green(`✅ ${okCount} deployment(s) já configurado(s) corretamente (ignorados)`));
+      console.log(chalk.blue(`🔧 ${deploymentsNeedingUpdate.length} deployment(s) precisam de configuração/atualização\n`));
+    }
+
+    // 6. Seleção interativa
     if (!options.selectAll) {
-      const choices = deploymentsWithStatus.map(deployment => ({
+      const choices = deploymentsNeedingUpdate.map(deployment => ({
         name: `${deployment.status} ${deployment.displayName} ${deployment.filePathDisplay}`,
         value: deployment,
         checked: false
@@ -116,13 +133,13 @@ async function execute(directory, options = {}) {
         return;
       }
 
-      deploymentsWithStatus.splice(0, deploymentsWithStatus.length, ...selectedDeployments);
+      deploymentsNeedingUpdate.splice(0, deploymentsNeedingUpdate.length, ...selectedDeployments);
     }
 
-    // 6. Preview das mudanças
+    // 7. Preview das mudanças
     console.log(chalk.blue('\n🔍 Preview das mudanças:\n'));
 
-    for (const deployment of deploymentsWithStatus) {
+    for (const deployment of deploymentsNeedingUpdate) {
       const otelVars = createOtelEnvironmentVariables(deployment.namespace, deployment.name);
 
       console.log(chalk.cyan(`📄 ${deployment.name} (${deployment.namespace})`));
@@ -150,7 +167,7 @@ async function execute(directory, options = {}) {
         {
           type: 'confirm',
           name: 'confirmApply',
-          message: `Aplicar mudanças em ${deploymentsWithStatus.length} deployment(s)?`,
+          message: `Aplicar mudanças em ${deploymentsNeedingUpdate.length} deployment(s)?`,
           default: true
         }
       ]);
@@ -168,7 +185,7 @@ async function execute(directory, options = {}) {
     let processedCount = 0;
     let errorCount = 0;
 
-    for (const deployment of deploymentsWithStatus) {
+    for (const deployment of deploymentsNeedingUpdate) {
       const deploymentSpinner = ora(`Processando ${deployment.name}...`).start();
 
       try {
