@@ -114,45 +114,48 @@ npx ykubeedit add-otel /kubehomol/fundos-gestora-hml/frontend
 npx ykubeedit add-otel /kubehomol/fundos-gestora-stg/worker
 ```
 
-### Cenário 4: Usando repositório como parâmetro
+### Cenário 4: Executando diretamente do repositório
 
 ```bash
-# Clonar e processar um repositório Git específico
-npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git
+# Executar diretamente do repositório GitHub sem clonar
+npx github:akaytatsu/ykubeedit add-otel
 
-# Especificar branch específica
-npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git#feature/new-deployments
+# Executar de uma branch específica
+npx github:akaytatsu/ykubeedit#main add-otel
 
-# Especificar subdiretório dentro do repositório
-npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git --subdirectory=kubernetes/staging
+# Executar com parâmetros - especificar diretório
+npx github:akaytatsu/ykubeedit add-otel /home/usuario/projetos/kubehomol
 
-# Combo: repositório com branch e subdiretório
-npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git#main --subdirectory=k8s/production
+# Preview sem modificar arquivos
+npx github:akaytatsu/ykubeedit add-otel --dry-run
 
-# Preview em repositório remoto
-npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git --dry-run
+# Executar versão específica
+npx ykubeedit@1.0.0 add-otel
+
+# Executar sempre a versão mais recente
+npx ykubeedit@latest add-otel /path/to/yamls
 ```
 
-**Como funciona com repositórios:**
+**Vantagens de executar diretamente:**
 
-1. **Clone temporário**: O ykubeedit clona o repositório em uma pasta temporária
-2. **Processamento**: Escaneia e processa os deployments normalmente
-3. **Aplicação**: As mudanças são aplicadas nos arquivos clonados
-4. **Commit automático**: Cria um commit com as alterações
-5. **Push**: Envia as mudanças de volta para o repositório (se autorizado)
-6. **Limpeza**: Remove a pasta temporária
+- ✅ **Sem instalação**: Não precisa instalar globalmente
+- ✅ **Sempre atualizado**: Usa a versão mais recente do npm
+- ✅ **Não ocupa espaço**: Não fica instalado permanentemente
+- ✅ **Rápido**: Execução direta sem setup
+- ✅ **Portable**: Funciona em qualquer máquina com npm/node
 
-**Opções adicionais para repositórios:**
+**Exemplos práticos de uso:**
 
 ```bash
-# Não fazer push automático (apenas processar localmente)
-npx ykubeedit add-otel https://github.com/usuario/repo.git --no-push
+# Time de DevOps processando múltiplos ambientes
+npx ykubeedit add-otel /projetos/staging --dry-run
+npx ykubeedit add-otel /projetos/production
 
-# Especificar mensagem de commit personalizada
-npx ykubeedit add-otel https://github.com/usuario/repo.git --commit-message "Add OpenTelemetry config"
+# CI/CD Pipeline
+npx ykubeedit add-otel $WORKSPACE/k8s --dry-run
 
-# Trabalhar em uma nova branch
-npx ykubeedit add-otel https://github.com/usuario/repo.git --create-branch=add-otel-config
+# Developer local
+npx ykubeedit add-otel ./kubernetes/manifests
 ```
 
 ## 🔧 Funcionamento Interno
