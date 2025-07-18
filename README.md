@@ -172,26 +172,40 @@ npx ykubeedit add-otel /kubehomol/fundos-gestora-hml/frontend
 npx ykubeedit add-otel /kubehomol/fundos-gestora-stg/worker
 ```
 
-### Cenário 4: Executando diretamente do repositório
+### Cenário 4: Limpeza de cert-manager produção
+
+```bash
+# Verificar quais ingress têm a tag problemática
+npx ykubeedit remove-cert-manager-prod /kubehomol/vertc-portal-ri-backend-demo --dry-run
+
+# Remover tags de todos os ingress encontrados
+npx ykubeedit remove-cert-manager-prod /kubehomol --select-all
+```
+
+### Cenário 5: Executando diretamente do repositório
 
 ```bash
 # Executar diretamente do repositório GitHub sem clonar
 npx github:akaytatsu/ykubeedit add-otel
+npx github:akaytatsu/ykubeedit remove-cert-manager-prod
 
 # Executar de uma branch específica
 npx github:akaytatsu/ykubeedit#main add-otel
 
 # Executar com parâmetros - especificar diretório
 npx github:akaytatsu/ykubeedit add-otel /home/usuario/projetos/kubehomol
+npx github:akaytatsu/ykubeedit remove-cert-manager-prod /home/usuario/projetos/kubehomol
 
 # Preview sem modificar arquivos
 npx github:akaytatsu/ykubeedit add-otel --dry-run
+npx github:akaytatsu/ykubeedit remove-cert-manager-prod --dry-run
 
 # Executar versão específica
 npx ykubeedit@1.0.0 add-otel
 
 # Executar sempre a versão mais recente
 npx ykubeedit@latest add-otel /path/to/yamls
+npx ykubeedit@latest remove-cert-manager-prod /path/to/yamls
 ```
 
 **Vantagens de executar diretamente:**
@@ -208,28 +222,42 @@ npx ykubeedit@latest add-otel /path/to/yamls
 # Time de DevOps processando múltiplos ambientes
 npx ykubeedit add-otel /projetos/staging --dry-run
 npx ykubeedit add-otel /projetos/production
+npx ykubeedit remove-cert-manager-prod /projetos/homolog --select-all
 
 # CI/CD Pipeline
 npx ykubeedit add-otel $WORKSPACE/k8s --dry-run
+npx ykubeedit remove-cert-manager-prod $WORKSPACE/k8s --dry-run
 
 # Developer local
 npx ykubeedit add-otel ./kubernetes/manifests
+npx ykubeedit remove-cert-manager-prod ./kubernetes/ingress
 ```
 
 ## 🔧 Funcionamento Interno
 
-### Detecção de Deployments
+### Detecção de Recursos Kubernetes
 
 O YKubeEdit procura por arquivos `.yaml` ou `.yml` que contenham:
+
+**Para Deployments:**
 - `kind: Deployment`
 - `apiVersion: apps/v1`
 
+**Para Ingress:**
+- `kind: Ingress`
+- `apiVersion: networking.k8s.io/v1`
+
 ### Extração de Metadados
 
-Para cada deployment encontrado, extrai:
+**Para Deployments:**
 - **namespace**: `metadata.namespace`
 - **nome do app**: `metadata.name` 
 - **nome do container**: `spec.template.spec.containers[0].name`
+
+**Para Ingress:**
+- **namespace**: `metadata.namespace`
+- **nome**: `metadata.name`
+- **annotations**: `metadata.annotations`
 
 ### Lógica de Nomenclatura OpenTelemetry
 
@@ -288,16 +316,17 @@ ykubeedit/
 ├── bin/
 │   └── ykubeedit.js           # Entry point
 ├── src/
-│   ├── cli.js                 # CLI principal
+│   ├── cli.js                          # CLI principal
 │   ├── commands/
-│   │   ├── index.js           # Registry de comandos
-│   │   └── add-otel.js        # Comando OpenTelemetry
+│   │   ├── index.js                    # Registry de comandos
+│   │   ├── add-otel.js                 # Comando OpenTelemetry
+│   │   └── remove-cert-manager-prod.js # Comando Cert-Manager
 │   ├── utils/
-│   │   ├── file-scanner.js    # Busca arquivos YAML
-│   │   ├── yaml-parser.js     # Manipulação YAML
-│   │   └── deployment-utils.js # Utilitários K8s
+│   │   ├── file-scanner.js             # Busca arquivos YAML
+│   │   ├── yaml-parser.js              # Manipulação YAML
+│   │   └── deployment-utils.js         # Utilitários K8s
 │   └── templates/
-│       └── otel-config.js     # Template OTEL
+│       └── otel-config.js              # Template OTEL
 ```
 
 ### Executar Localmente
@@ -320,6 +349,8 @@ Futuras funcionalidades planejadas:
 - `add-secrets` - Configurar secrets e configmaps
 - `validate` - Validar sintaxe e boas práticas
 - `backup` - Criar backup antes das modificações
+- `remove-annotations` - Remover annotations específicas de qualquer recurso
+- `update-cert-manager` - Atualizar cluster-issuer para ambientes específicos
 
 ## 📄 Licença
 
