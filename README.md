@@ -114,6 +114,47 @@ npx ykubeedit add-otel /kubehomol/fundos-gestora-hml/frontend
 npx ykubeedit add-otel /kubehomol/fundos-gestora-stg/worker
 ```
 
+### Cenário 4: Usando repositório como parâmetro
+
+```bash
+# Clonar e processar um repositório Git específico
+npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git
+
+# Especificar branch específica
+npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git#feature/new-deployments
+
+# Especificar subdiretório dentro do repositório
+npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git --subdirectory=kubernetes/staging
+
+# Combo: repositório com branch e subdiretório
+npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git#main --subdirectory=k8s/production
+
+# Preview em repositório remoto
+npx ykubeedit add-otel https://github.com/usuario/meu-repo-k8s.git --dry-run
+```
+
+**Como funciona com repositórios:**
+
+1. **Clone temporário**: O ykubeedit clona o repositório em uma pasta temporária
+2. **Processamento**: Escaneia e processa os deployments normalmente
+3. **Aplicação**: As mudanças são aplicadas nos arquivos clonados
+4. **Commit automático**: Cria um commit com as alterações
+5. **Push**: Envia as mudanças de volta para o repositório (se autorizado)
+6. **Limpeza**: Remove a pasta temporária
+
+**Opções adicionais para repositórios:**
+
+```bash
+# Não fazer push automático (apenas processar localmente)
+npx ykubeedit add-otel https://github.com/usuario/repo.git --no-push
+
+# Especificar mensagem de commit personalizada
+npx ykubeedit add-otel https://github.com/usuario/repo.git --commit-message "Add OpenTelemetry config"
+
+# Trabalhar em uma nova branch
+npx ykubeedit add-otel https://github.com/usuario/repo.git --create-branch=add-otel-config
+```
+
 ## 🔧 Funcionamento Interno
 
 ### Detecção de Deployments
