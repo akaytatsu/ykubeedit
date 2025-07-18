@@ -1,0 +1,50 @@
+{
+  "name": "ykubeedit",
+  "version": "1.0.0",
+  "description": "CLI tool para edição em massa de YAMLs do Kubernetes",
+  "main": "bin/ykubeedit.js",
+  "bin": {
+    "ykubeedit": "./bin/ykubeedit.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bin/ykubeedit.js"
+  },
+  "keywords": [
+    "kubernetes",
+    "yaml",
+    "opentelemetry",
+    "cli",
+    "devops",
+    "k8s",
+    "deployment",
+    "mass-edit"
+  ],
+  "author": "TSF Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/akaytatsu/ykubeedit.git"
+  },
+  "homepage": "https://github.com/akaytatsu/ykubeedit#readme",
+  "bugs": {
+    "url": "https://github.com/akaytatsu/ykubeedit/issues"
+  },
+  "dependencies": {
+    "inquirer": "^8.2.6",
+    "js-yaml": "^4.1.0",
+    "glob": "^10.3.10",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "fs-extra": "^11.2.0",
+    "commander": "^11.1.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ]
+}
