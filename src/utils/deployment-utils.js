@@ -21,8 +21,7 @@ function extractAppSuffix(deploymentName, namespace) {
 }
 
 function generateSubsystemName(namespace, deploymentName) {
-  const appSuffix = extractAppSuffix(deploymentName, namespace);
-  return appSuffix;
+  return deploymentName;
 }
 
 function formatDeploymentInfo(deployment) {
