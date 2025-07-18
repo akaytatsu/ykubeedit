@@ -9,6 +9,7 @@ CLI tool para edição em massa de YAMLs do Kubernetes com foco em automação e
 - 🎯 **Seleção interativa**: Interface CLI para escolher quais deployments modificar
 - 🔍 **Detecção automática**: Escaneia recursivamente buscando deployments Kubernetes
 - 💡 **Preview mode**: Visualiza mudanças antes de aplicar (--dry-run)
+- 📋 **Filtros de exclusão**: Suporte ao arquivo `.yamlsignore` para ignorar pastas/arquivos
 
 ## 🚀 Instalação e Uso
 
@@ -178,6 +179,46 @@ Para cada deployment encontrado, extrai:
 - `OTEL_SERVICE_NAME` = namespace
 - `cx.application.name` = namespace  
 - `cx.subsystem.name` = namespace + "-" + sufixo baseado no nome do deployment
+
+### Arquivo .yamlsignore
+
+O YKubeEdit suporta um arquivo `.yamlsignore` na raiz do diretório para excluir pastas/arquivos do processamento.
+
+**Exemplo de `.yamlsignore`:**
+
+```gitignore
+# Ignorar pastas específicas
+tests/
+temp/
+backup/
+
+# Ignorar por padrão
+*.tmp.yaml
+*-backup.yml
+
+# Ambientes específicos
+development/
+staging-old/
+
+# Arquivos temporários
+helm-output/
+kustomize-build/
+```
+
+**Características:**
+
+- ✅ **Comentários**: Linhas começando com `#` são ignoradas
+- ✅ **Paths relativos**: `tests/` ignora a pasta tests do diretório atual
+- ✅ **Paths absolutos**: `/home/user/ignore` ignora path específico
+- ✅ **Wildcards simples**: `*.tmp.yaml` ignora arquivos temporários
+- ✅ **Pastas e arquivos**: Funciona para ambos
+
+**Como funciona:**
+
+1. **Verificação**: YKubeEdit procura por `.yamlsignore` na raiz do diretório
+2. **Parsing**: Lê e processa os padrões de exclusão
+3. **Aplicação**: Filtra arquivos/pastas durante o scan
+4. **Relatório**: Informa quantos arquivos foram ignorados
 
 ## 🛠️ Desenvolvimento
 

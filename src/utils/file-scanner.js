@@ -3,17 +3,40 @@ const path = require('path');
 const fs = require('fs-extra');
 const yaml = require('js-yaml');
 const chalk = require('chalk');
+const { loadYamlsIgnore, createIgnoreFilter } = require('./yamlsignore-parser');
 
 async function scanYamlFiles(directory) {
   const pattern = path.join(directory, '**/*.{yaml,yml}');
   
   try {
+    // Carregar padrões do .yamlsignore
+    const ignorePaths = await loadYamlsIgnore(directory);
+    
+    // Padrões padrão de exclusão
+    const defaultIgnores = ['**/node_modules/**', '**/.*/**'];
+    
+    // Converter paths do .yamlsignore para padrões glob
+    const yamlsIgnorePatterns = ignorePaths.map(ignorePath => {
+      const relativePath = path.relative(directory, ignorePath);
+      return `**/${relativePath}/**`;
+    });
+    
+    const allIgnores = [...defaultIgnores, ...yamlsIgnorePatterns];
+    
     const files = await glob(pattern, {
-      ignore: ['**/node_modules/**', '**/.*/**'],
+      ignore: allIgnores,
       absolute: true
     });
     
-    return files;
+    // Filtro adicional para casos que o glob não capturou
+    const ignoreFilter = createIgnoreFilter(ignorePaths, directory);
+    const filteredFiles = files.filter(ignoreFilter);
+    
+    if (files.length !== filteredFiles.length) {
+      console.log(chalk.gray(`   Ignorados ${files.length - filteredFiles.length} arquivos via .yamlsignore`));
+    }
+    
+    return filteredFiles;
   } catch (error) {
     throw new Error(`Erro ao escanear arquivos YAML: ${error.message}`);
   }

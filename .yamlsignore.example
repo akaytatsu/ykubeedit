@@ -1,0 +1,56 @@
+# .yamlsignore - Exemplo de arquivo de exclusão para YKubeEdit
+# 
+# Este arquivo define quais pastas e arquivos devem ser ignorados
+# durante o scan de deployments Kubernetes
+#
+# Sintaxe:
+# - Linhas começando com # são comentários
+# - Paths relativos são baseados no diretório onde o comando é executado
+# - Paths absolutos são suportados
+# - Wildcards simples (*) são suportados
+
+# Ignorar pastas de testes
+tests/
+test/
+__tests__/
+
+# Ignorar pastas temporárias
+temp/
+tmp/
+backup/
+.backup/
+
+# Ignorar outputs de ferramentas
+helm-output/
+kustomize-build/
+terraform-output/
+
+# Ignorar ambientes específicos
+development/
+staging-old/
+deprecated/
+
+# Ignorar por padrões de arquivo
+*.tmp.yaml
+*.backup.yml
+*-temp.yaml
+*-old.yml
+
+# Ignorar documentação
+docs/
+documentation/
+
+# Ignorar ferramentas de CI/CD
+.github/
+.gitlab-ci/
+jenkins/
+
+# Ignorar node_modules (já incluído por padrão, mas pode ser explícito)
+node_modules/
+
+# Ignorar arquivos de configuração local
+.local/
+local-config/
+
+# Exemplo de path absoluto (descomentar se necessário)
+# /home/user/projetos/ignore-this-folder/
