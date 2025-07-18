@@ -25,8 +25,8 @@ async function execute(directory, options = {}) {
       return;
     }
 
-    // 2. Analisar arquivos para encontrar a tag problemática
-    const ingressWithProdTag = [];
+    // 2. Analisar arquivos para encontrar ingress que precisam de ajuste
+    const ingressNeedingUpdate = [];
 
     for (const ingressFile of ingressFiles) {
       try {
@@ -35,12 +35,30 @@ async function execute(directory, options = {}) {
         for (const doc of docs) {
           if (doc && doc.kind === 'Ingress') {
             const annotations = doc.metadata?.annotations;
-            if (annotations && annotations['cert-manager.io/cluster-issuer'] === 'letsencrypt-prod') {
-              ingressWithProdTag.push({
+            const hasProdTag = annotations && annotations['cert-manager.io/cluster-issuer'] === 'letsencrypt-prod';
+            const hasClusterIssue = annotations && annotations['cert-manager.io/cluster-issuer'] === 'clusterissue';
+            const hasOtherClusterIssuer = annotations && annotations['cert-manager.io/cluster-issuer'] && 
+                                         annotations['cert-manager.io/cluster-issuer'] !== 'letsencrypt-prod' &&
+                                         annotations['cert-manager.io/cluster-issuer'] !== 'clusterissue';
+            
+            // Precisa de atualização se:
+            // 1. Tem a tag letsencrypt-prod (precisa remover e substituir por clusterissue)
+            // 2. Não tem nenhuma tag cluster-issuer (precisa adicionar clusterissue)
+            // 3. Não incluir se já tem clusterissue ou outro cluster-issuer
+            if (hasProdTag || (!hasClusterIssue && !hasOtherClusterIssuer && !annotations?.['cert-manager.io/cluster-issuer'])) {
+              let action = '';
+              if (hasProdTag) {
+                action = 'replace';
+              } else {
+                action = 'add';
+              }
+
+              ingressNeedingUpdate.push({
                 ...ingressFile,
                 ingressName: doc.metadata.name,
                 namespace: doc.metadata.namespace || 'default',
-                document: doc
+                document: doc,
+                action
               });
             }
           }
@@ -50,40 +68,49 @@ async function execute(directory, options = {}) {
       }
     }
 
-    if (ingressWithProdTag.length === 0) {
-      console.log(chalk.green('✅ Nenhum ingress encontrado com a tag cert-manager.io/cluster-issuer: letsencrypt-prod'));
+    if (ingressNeedingUpdate.length === 0) {
+      console.log(chalk.green('✅ Todos os ingress já possuem configuração cert-manager correta (clusterissue)'));
       return;
     }
 
     // 3. Mostrar resumo
     console.log(chalk.green(`\n📊 Resumo:`));
-    console.log(chalk.gray(`   ${ingressWithProdTag.length} ingress(es) encontrado(s) com a tag problemática`));
-    console.log(chalk.gray(`   ${new Set(ingressWithProdTag.map(i => i.filePath)).size} arquivo(s) único(s)\n`));
+    console.log(chalk.gray(`   ${ingressNeedingUpdate.length} ingress(es) precisam de atualização`));
+    console.log(chalk.gray(`   ${new Set(ingressNeedingUpdate.map(i => i.filePath)).size} arquivo(s) único(s)\n`));
 
     // 4. Listar ingress encontrados
-    console.log(chalk.blue('🔍 Ingress encontrados com cert-manager.io/cluster-issuer: letsencrypt-prod:\n'));
+    console.log(chalk.blue('🔍 Ingress que precisam de atualização:\n'));
     
-    ingressWithProdTag.forEach(ingress => {
+    ingressNeedingUpdate.forEach(ingress => {
       console.log(chalk.cyan(`📄 ${ingress.ingressName} (${ingress.namespace})`));
       console.log(chalk.gray(`   Arquivo: ${path.relative(process.cwd(), ingress.filePath)}`));
+      
+      if (ingress.action === 'replace') {
+        console.log(chalk.yellow('   🔄 Substituir: letsencrypt-prod → clusterissue'));
+      } else {
+        console.log(chalk.green('   ➕ Adicionar: cert-manager.io/cluster-issuer: clusterissue'));
+      }
       console.log();
     });
 
     // 5. Seleção interativa (se não for --select-all)
-    let selectedIngress = ingressWithProdTag;
+    let selectedIngress = ingressNeedingUpdate;
     
     if (!options.selectAll) {
-      const choices = ingressWithProdTag.map(ingress => ({
-        name: `${ingress.ingressName} (${ingress.namespace}) - ${path.relative(process.cwd(), ingress.filePath)}`,
-        value: ingress,
-        checked: true
-      }));
+      const choices = ingressNeedingUpdate.map(ingress => {
+        const actionText = ingress.action === 'replace' ? '🔄 Substituir' : '➕ Adicionar';
+        return {
+          name: `${actionText} ${ingress.ingressName} (${ingress.namespace}) - ${path.relative(process.cwd(), ingress.filePath)}`,
+          value: ingress,
+          checked: true
+        };
+      });
 
       const { selectedIngressList } = await inquirer.prompt([
         {
           type: 'checkbox',
           name: 'selectedIngressList',
-          message: 'Selecione os ingress para remover a tag cert-manager.io/cluster-issuer: letsencrypt-prod:',
+          message: 'Selecione os ingress para atualizar cert-manager.io/cluster-issuer:',
           choices,
           pageSize: 15,
           validate: (answer) => {
@@ -109,7 +136,13 @@ async function execute(directory, options = {}) {
     for (const ingress of selectedIngress) {
       console.log(chalk.cyan(`📄 ${ingress.ingressName} (${ingress.namespace})`));
       console.log(chalk.gray(`   Arquivo: ${path.relative(process.cwd(), ingress.filePath)}`));
-      console.log(chalk.red('   ➖ Removendo: cert-manager.io/cluster-issuer: letsencrypt-prod'));
+      
+      if (ingress.action === 'replace') {
+        console.log(chalk.red('   ➖ Removendo: cert-manager.io/cluster-issuer: letsencrypt-prod'));
+        console.log(chalk.green('   ➕ Adicionando: cert-manager.io/cluster-issuer: clusterissue'));
+      } else {
+        console.log(chalk.green('   ➕ Adicionando: cert-manager.io/cluster-issuer: clusterissue'));
+      }
       console.log();
     }
 
@@ -119,7 +152,7 @@ async function execute(directory, options = {}) {
         {
           type: 'confirm',
           name: 'confirmApply',
-          message: `Remover a tag cert-manager.io/cluster-issuer: letsencrypt-prod de ${selectedIngress.length} ingress(es)?`,
+          message: `Atualizar cert-manager.io/cluster-issuer em ${selectedIngress.length} ingress(es)?`,
           default: true
         }
       ]);
@@ -147,16 +180,15 @@ async function execute(directory, options = {}) {
         for (const doc of docs) {
           if (doc && 
               doc.kind === 'Ingress' && 
-              doc.metadata?.name === ingress.ingressName &&
-              doc.metadata?.annotations &&
-              doc.metadata.annotations['cert-manager.io/cluster-issuer'] === 'letsencrypt-prod') {
+              doc.metadata?.name === ingress.ingressName) {
             
-            delete doc.metadata.annotations['cert-manager.io/cluster-issuer'];
-            
-            // Se não há mais annotations, remover o objeto annotations vazio
-            if (Object.keys(doc.metadata.annotations).length === 0) {
-              delete doc.metadata.annotations;
+            // Garantir que existe o objeto annotations
+            if (!doc.metadata.annotations) {
+              doc.metadata.annotations = {};
             }
+            
+            // Atualizar ou adicionar a annotation correta
+            doc.metadata.annotations['cert-manager.io/cluster-issuer'] = 'clusterissue';
           }
         }
 
