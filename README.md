@@ -5,7 +5,7 @@ CLI tool para edição em massa de YAMLs do Kubernetes com foco em automação e
 ## 📋 Funcionalidades
 
 - ✅ **Adicionar OpenTelemetry**: Adiciona configurações completas de OpenTelemetry em deployments
-- 🧹 **Remover Cert-Manager Prod**: Remove tags cert-manager.io/cluster-issuer: letsencrypt-prod de ingress
+- 🧹 **Atualizar Cert-Manager**: Corrige cluster-issuer de ingress para homologação (letsencrypt-prod → clusterissue)
 - 🔄 **Edição em massa**: Processa múltiplos recursos Kubernetes simultaneamente
 - 🎯 **Seleção interativa**: Interface CLI para escolher quais recursos modificar
 - 🔍 **Detecção automática**: Escaneia recursivamente buscando deployments e ingress Kubernetes
@@ -87,9 +87,9 @@ env:
     value: "true"
 ```
 
-### `remove-cert-manager-prod` - Remover Cert-Manager Produção
+### `remove-cert-manager-prod` - Atualizar Cert-Manager para Homologação
 
-Remove a annotation `cert-manager.io/cluster-issuer: letsencrypt-prod` de recursos Ingress.
+Atualiza a configuração de cert-manager em recursos Ingress para usar o cluster-issuer correto de homologação.
 
 ```bash
 # Escanear diretório atual
@@ -112,29 +112,48 @@ npx ykubeedit remove-cert-manager-prod --help
 
 1. **Escaneia** recursivamente o diretório em busca de arquivos YAML
 2. **Identifica** recursos Ingress automaticamente
-3. **Filtra** ingress que possuem a annotation `cert-manager.io/cluster-issuer: letsencrypt-prod`
+3. **Detecta** ingress que precisam de atualização:
+   - Com `cert-manager.io/cluster-issuer: letsencrypt-prod` (substitui por `clusterissue`)
+   - Sem nenhuma annotation cert-manager (adiciona `clusterissue`)
 4. **Apresenta** lista interativa para seleção múltipla
-5. **Remove** apenas a annotation problemática, preservando outras annotations
+5. **Atualiza** para usar o cluster-issuer correto de homologação
 
-**Exemplo de mudança aplicada:**
+**Exemplos de mudanças aplicadas:**
 
 ```yaml
+# CENÁRIO 1: Substituição de letsencrypt-prod
 # ANTES
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod  # <- REMOVIDA
+    cert-manager.io/cluster-issuer: letsencrypt-prod  # <- SUBSTITUI
     nginx.ingress.kubernetes.io/rewrite-target: /
-    other-annotation: value                           # <- PRESERVADA
 
 # DEPOIS  
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
+    cert-manager.io/cluster-issuer: clusterissue      # <- ATUALIZADO
     nginx.ingress.kubernetes.io/rewrite-target: /
-    other-annotation: value
+
+# CENÁRIO 2: Adição quando não existe
+# ANTES
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Sem cert-manager
+
+# DEPOIS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: clusterissue      # <- ADICIONADO
+    nginx.ingress.kubernetes.io/rewrite-target: /
 ```
 
 ### Opções Globais
@@ -172,13 +191,13 @@ npx ykubeedit add-otel /kubehomol/fundos-gestora-hml/frontend
 npx ykubeedit add-otel /kubehomol/fundos-gestora-stg/worker
 ```
 
-### Cenário 4: Limpeza de cert-manager produção
+### Cenário 4: Correção de cert-manager para homologação
 
 ```bash
-# Verificar quais ingress têm a tag problemática
+# Verificar quais ingress precisam de correção
 npx ykubeedit remove-cert-manager-prod /kubehomol/vertc-portal-ri-backend-demo --dry-run
 
-# Remover tags de todos os ingress encontrados
+# Corrigir todos os ingress encontrados
 npx ykubeedit remove-cert-manager-prod /kubehomol --select-all
 ```
 
